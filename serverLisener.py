@@ -30,7 +30,7 @@ def lisener(c,q):
   
         # reverse the given string from client 
         #data = data[::-1] 
-        data=np.array(struct.unpack('>12d', data))
+        data=np.array(struct.unpack('>12d', data)) #convert data to anything you want
         
         #print (data)
         q.put(data)    
@@ -48,6 +48,8 @@ def processing(q):
     while t1.isAlive():
         if(q.qsize()>0):
             data=q.get()
+            
+            # start processing your data here
             print(data)
             print('Num Elements:' , q.qsize())
        
@@ -62,36 +64,31 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((host, port)) 
 print("socket binded to post", port) 
   
-# put the socket into listening mode 
+q=Queue()
+# a forever loop until client wants to exit 
 s.listen(2) # how many clients 
 print("socket is listening") 
+
+while True:
   
-# a forever loop until client wants to exit 
+    # establish connection with client 
+    c, addr = s.accept() 
+    
+    # lock acquired by client 
+    #print_lock.acquire() 
+    print('Connected to :', addr[0], ':', addr[1]) 
+    # Start a new thread and return its identifier 
+    t1=threading.Thread(target=lisener,args=(c,q))
+    t1.daemon=True;
+    t1.start()
+    
 
-q=Queue()
-
-
-  
-# establish connection with client 
-c, addr = s.accept() 
-
-# lock acquired by client 
-#print_lock.acquire() 
-print('Connected to :', addr[0], ':', addr[1]) 
-# Start a new thread and return its identifier 
-t1=threading.Thread(target=lisener,args=(c,q))
-t1.daemon=True;
-t1.start()
-
-
-loop=t1.isAlive()
-t2=threading.Thread(target=processing,args=(q,))
-t2.daemon=True;
-t2.start()
+    t2=threading.Thread(target=processing,args=(q,))
+    t2.daemon=True;
+    t2.start()
 
  
     
 
     
 s.close() 
-  
